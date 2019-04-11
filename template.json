@@ -1,0 +1,49 @@
+{
+	"variables": {
+		"output_path": "./output"
+	},
+	"builders": [
+		{
+			"type": "vagrant",
+			"source_path": "centos/7",
+			"ssh_port": 22,
+	        "ssh_username": "vagrant",
+	        "communicator": "ssh",
+	        "add_force": true,
+	        "provider": "virtualbox",
+			"output_dir": "{{user `output_path`}}/vagrant"
+		},
+		{
+			"type": "docker",
+			"image": "centos:7",
+			"export_path": "{{user `output_path`}}/docker/image.tar"
+		}
+	],
+	"provisioners": [
+		{
+			"type": "shell",
+			"inline": "yum install -y sudo",
+			"only": ["docker"]
+		},
+		{
+			"type": "shell",
+			"inline": [
+				"echo Starting Provisioning",
+				"sudo rpm --import http://packages.irontec.com/public.key",
+    			"REPOFILE=irontec.repo",
+    			"cat <<'EOF' > /tmp/${REPOFILE}\n[irontec]\nname=Irontec RPMs repository\nbaseurl=http://packages.irontec.com/centos/$releasever/$basearch/\nEOF",
+    			"sudo mv /tmp/${REPOFILE} /etc/yum.repos.d/",
+    			"sudo yum install -y sngrep",
+    			"sudo rm -f /etc/yum.repos.d/${REPOFILE}"
+			]
+		}
+	],
+	"post-processors": [
+		{
+			"type": "docker-import",
+			"repository": "zaleos",
+			"tag": "demo",
+			"only": ["docker"]
+		}
+	]
+}
